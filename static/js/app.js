@@ -28,6 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
         errorMessage: document.getElementById('error-message'),
         emptyState: document.getElementById('empty-state'),
         resetFiltersBtn: document.getElementById('reset-filters-btn'),
+        exportCsvBtn: document.getElementById('export-csv-btn'),
         statusDot: document.getElementById('status-dot'),
         statusText: document.getElementById('status-text'),
         
@@ -281,6 +282,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 
                 cardActions.appendChild(tweetBtn);
+                // Copy to Clipboard button for note
+                const copyBtn = document.createElement('button');
+                copyBtn.className = 'btn btn-secondary btn-sm';
+                copyBtn.innerHTML = `
+                    <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                    </svg>
+                    <span>Copy</span>
+                `;
+                copyBtn.addEventListener('click', () => {
+                    navigator.clipboard.writeText(item.text).then(() => {
+                        showToast('Note copied to clipboard!', 'success');
+                    }).catch(err => {
+                        console.error('Copy error:', err);
+                        showToast('Failed to copy note.', 'error');
+                    });
+                });
+                cardActions.appendChild(copyBtn);
                 card.appendChild(cardActions);
                 
                 section.appendChild(card);
@@ -496,4 +516,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // === Initialize Application ===
     fetchReleaseNotes(false);
+// Export to CSV button
+elements.exportCsvBtn.addEventListener('click', () => {
+    const filtered = getFilteredEntries();
+    const rows = [['Date', 'Type', 'Text', 'Link']];
+    filtered.forEach(entry => {
+        entry.items.forEach(item => {
+            rows.push([
+                entry.date,
+                item.type,
+                item.text.replace(/\n/g, ' '),
+                entry.url
+            ]);
+        });
+    });
+    const csvContent = rows.map(r => r.map(v => `"${v.replace(/"/g, '""')}"`).join(','))
+        .join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'bigquery_release_notes.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+});
 });

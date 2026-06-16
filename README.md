@@ -44,6 +44,9 @@ You can view a live demo (if hosted) at: `http://localhost:5000` after running t
 - **Elegant UI** – Dark theme, glass‑morphic cards, animated gradient blobs, custom scrollbars, and responsive layout.
 - **Caching** – Server caches feed data for 1 hour (in‑memory and JSON file) to reduce network calls.
 - **Zero external JS frameworks** – Pure vanilla JavaScript for maximum control.
+- **Copy to Clipboard** – Quickly copy a release note’s text to the clipboard.
+- **Export to CSV** – Export the currently visible notes as a CSV file.
+
 
 ---
 
