@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BigQuery Release Notes Explorer</title>
+    <meta name="description" content="Explore, filter, and share the latest Google Cloud BigQuery release notes and features.">
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <script defer src="/static/js/app.js"></script>
+</head>
+<body>
+    <!-- Background Glow Blobs -->
+    <div class="glow-blob glow-blue"></div>
+    <div class="glow-blob glow-red"></div>
+    <div class="glow-blob glow-amber"></div>
+
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="brand">
+                <div class="logo-icon">
+                    <!-- Custom SVG representing BigQuery/Google Cloud databases -->
+                    <svg viewBox="0 0 24 24" width="32" height="32" fill="none" xmlns="http://www.w3.org/2005/svg">
+                        <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="url(#bq-gradient-1)" stroke="rgba(255,255,255,0.4)" stroke-width="0.5"/>
+                        <path d="M2 17L12 22L22 17M2 12L12 17L22 12" stroke="url(#bq-gradient-2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <defs>
+                            <linearGradient id="bq-gradient-1" x1="2" y1="2" x2="22" y2="12" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#38bdf8"/>
+                                <stop offset="1" stop-color="#3b82f6"/>
+                            </linearGradient>
+                            <linearGradient id="bq-gradient-2" x1="2" y1="12" x2="22" y2="22" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#3b82f6"/>
+                                <stop offset="1" stop-color="#1d4ed8"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </div>
+                <div class="brand-text">
+                    <h1>BigQuery Release Notes</h1>
+                    <p class="subtitle">Stay up-to-date with Google Cloud BigQuery releases</p>
+                </div>
+            </div>
+            
+            <div class="header-actions">
+                <div class="status-indicator">
+                    <span id="status-dot" class="dot idle"></span>
+                    <span id="status-text" class="status-msg">Loading feed...</span>
+                </div>
+                <button id="refresh-btn" class="btn btn-primary btn-refresh" aria-label="Refresh Release Notes">
+                    <span class="btn-icon">
+                        <!-- SVG Refresh Icon -->
+                        <svg class="icon-spin" viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+                        </svg>
+                    </span>
+                    <span class="btn-text">Refresh</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content Layout -->
+        <main class="main-layout">
+            <!-- Sidebar controls -->
+            <section class="controls-panel card">
+                <h2 class="section-title">Filters & Search</h2>
+                
+                <div class="control-group">
+                    <label for="search-input">Search Updates</label>
+                    <div class="search-box">
+                        <svg class="search-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                        </svg>
+                        <input type="text" id="search-input" placeholder="Type to search (e.g. Gemini, SQL)..." aria-label="Search release notes">
+                        <button id="clear-search-btn" class="clear-btn" aria-label="Clear search" style="display: none;">&times;</button>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>Filter by Type</label>
+                    <div class="filter-pills" role="group" aria-label="Filter update types">
+                        <button class="pill active" data-type="all">All Updates</button>
+                        <button class="pill" data-type="Feature">Features</button>
+                        <button class="pill" data-type="Issue">Issues</button>
+                        <button class="pill" data-type="Deprecation">Deprecations</button>
+                        <button class="pill" data-type="other">Other</button>
+                    </div>
+                </div>
+
+                <div class="stats-panel">
+                    <div class="stat-item">
+                        <span class="stat-value" id="stat-total">0</span>
+                        <span class="stat-label">Total Items</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value" id="stat-features">0</span>
+                        <span class="stat-label">Features</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Release Notes List -->
+            <section class="feed-panel">
+                <div id="loading-skeleton" class="skeleton-container">
+                    <div class="skeleton-card"></div>
+                    <div class="skeleton-card"></div>
+                    <div class="skeleton-card"></div>
+                </div>
+
+                <div id="error-container" class="error-card card" style="display: none;">
+                    <div class="error-icon">
+                        <svg viewBox="0 0 24 24" width="48" height="48" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                            <polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"/>
+                            <line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                        </svg>
+                    </div>
+                    <h3>Failed to load release notes</h3>
+                    <p id="error-message">A network error occurred while connecting to the backend feed server.</p>
+                    <button id="retry-btn" class="btn btn-secondary">Retry Fetching</button>
+                </div>
+
+                <div id="empty-state" class="empty-card card" style="display: none;">
+                    <div class="empty-icon">
+                        <svg viewBox="0 0 24 24" width="48" height="48" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                            <line x1="8" y1="11" x2="14" y2="11"/>
+                        </svg>
+                    </div>
+                    <h3>No matches found</h3>
+                    <p>Try refining your search query or choosing a different filter category.</p>
+                    <button id="reset-filters-btn" class="btn btn-secondary btn-sm">Reset Filters</button>
+                </div>
+
+                <!-- Main dynamic content container -->
+                <div id="feed-container"></div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Tweet Modal / Drawer -->
+    <div id="tweet-modal" class="modal-overlay" aria-hidden="true" role="dialog" aria-labelledby="modal-title">
+        <div class="modal-card">
+            <header class="modal-header">
+                <h3 id="modal-title">Share Update to X</h3>
+                <button id="modal-close" class="close-btn" aria-label="Close modal">&times;</button>
+            </header>
+            
+            <div class="modal-body">
+                <!-- Preset Toggles for quick customization -->
+                <div class="modal-options">
+                    <span class="options-title">Customize:</span>
+                    <div class="options-row">
+                        <label class="toggle-checkbox">
+                            <input type="checkbox" id="toggle-date" checked>
+                            <span class="checkbox-custom"></span>
+                            Include Date
+                        </label>
+                        <label class="toggle-checkbox">
+                            <input type="checkbox" id="toggle-type" checked>
+                            <span class="checkbox-custom"></span>
+                            Include Type
+                        </label>
+                        <label class="toggle-checkbox">
+                            <input type="checkbox" id="toggle-link" checked>
+                            <span class="checkbox-custom"></span>
+                            Include Link
+                        </label>
+                        <label class="toggle-checkbox">
+                            <input type="checkbox" id="toggle-tags" checked>
+                            <span class="checkbox-custom"></span>
+                            Include Hashtags
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Textarea for editing -->
+                <div class="tweet-editor-group">
+                    <label for="tweet-text">Tweet text</label>
+                    <textarea id="tweet-text" rows="6" maxlength="500" placeholder="Type your tweet here..."></textarea>
+                    
+                    <div class="editor-footer">
+                        <span class="character-counter" id="char-counter">0 / 280</span>
+                    </div>
+                </div>
+
+                <!-- Warnings/Alerts if too long -->
+                <div id="tweet-length-warning" class="warning-banner" style="display: none;">
+                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                    </svg>
+                    <span>Character limit exceeded (280 max). X/Twitter will truncate it.</span>
+                </div>
+            </div>
+
+            <footer class="modal-footer">
+                <button id="copy-tweet-btn" class="btn btn-secondary">
+                    <span class="btn-icon">
+                        <!-- Copy icon -->
+                        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                        </svg>
+                    </span>
+                    <span>Copy Text</span>
+                </button>
+                <button id="post-tweet-btn" class="btn btn-twitter">
+                    <span class="btn-icon">
+                        <!-- X/Twitter logo -->
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" xmlns="http://www.w3.org/2005/svg">
+                            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                        </svg>
+                    </span>
+                    <span>Tweet this Update</span>
+                </button>
+            </footer>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="toast-container"></div>
+</body>
+</html>
